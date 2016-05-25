@@ -1,22 +1,30 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 
 public class Huffman {
 	
 	private LinkedList<CharFrequence> frequences;
 	CharFrequence root;
+	HashMap<Character, String> representations;
+	File file;
 	
 	Huffman(File file) throws IOException {
-		
+		this.file = file;
+				
 		FileReader reader = new FileReader(file);
 		
 		HashMap<Character, CharFrequence> charMap = new HashMap<Character, CharFrequence>();
@@ -36,14 +44,15 @@ public class Huffman {
 		
 		buildOrderedLinkedList(auxVector);
 		root = buildTree();
-		System.out.println(root.getFrequence());
+		buildRepresentations();
 	}
+	
 	
 	void buildOrderedLinkedList(CharFrequence [] auxVector) {
 		
 		frequences = new LinkedList<CharFrequence>();
 		
-		for (int i = 1; i < auxVector.length; i++) {
+		for (int i = 0; i < auxVector.length; i++) {
 			insertOrdered(auxVector[i]);
 		}
 		System.out.println();
@@ -61,7 +70,7 @@ public class Huffman {
 			insertOrdered(mergeCharFrequence(c1, c2));
 			
 		}
-		return frequences.get(0);
+		return frequences.getFirst();
 	}
 	
 	CharFrequence mergeCharFrequence(CharFrequence c1, CharFrequence c2) {
@@ -102,7 +111,58 @@ public class Huffman {
 		}
 	}
 	
+	void buildRepresentations() {
+		if(root == null) {
+			return;
+		}
+		
+		representations = new HashMap<>();
+		
+		if(root.getLeft() == null && root.getRight() == null){
+			representations.put(root.getValue(), "0");
+			
+		}else {
+			visitor(root, "", representations);
+		}
+		
+		
+		
+	}
 	
 	
+	void visitor(CharFrequence cf, String code, HashMap<Character, String> hm) {
+		if(cf == null) {
+			return;
+		}else if(cf.getValue() == null) {
+			visitor(cf.getRight(), code+"0", hm);
+			visitor(cf.getLeft(), code+"1", hm);
+		}else {
+			hm.put(cf.getValue(), code);
+		}
+	}
 	
+	File encodeFile() throws IOException {
+		
+		File temp = new File("temp.txt");
+		FileOutputStream fos = new FileOutputStream(temp);
+		FileReader fr = new FileReader(file);
+		
+		ArrayList bt = new ArrayList();
+		String binary = "";
+		while(fr.ready()) {
+			char c = (char)fr.read();
+			binary = c+"";			
+		}
+		short a = Short.parseShort(binary, 2);
+		ByteBuffer bytes = ByteBuffer.allocate(2).putShort(a);
+
+		byte[] array = bytes.array();
+		
+		fos.write(array);
+		return temp;
+	}
+	
+	HashMap<Character, String> getRepresentions() {
+		return this.representations;
+	}
 }

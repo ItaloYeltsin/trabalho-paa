@@ -41,4 +41,5 @@ public class CharFrequence {
 	public void setLeft(CharFrequence left) {
 		this.left = left;
 	}
+	
 }
