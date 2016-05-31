@@ -17,40 +17,41 @@ import java.util.zip.ZipFile;
 
 public class Huffman {
 	
-	private LinkedList<CharFrequence> frequences;
+	private LinkedList<CharFrequence> charFrequences;
+	private HashMap<Character, CharFrequence> frequencies; 
 	CharFrequence root;
 	HashMap<Character, String> representations;
 	File file;
-	
+
 	Huffman(File file) throws IOException {
 		this.file = file;
 				
 		FileReader reader = new FileReader(file);
-		
-		HashMap<Character, CharFrequence> charMap = new HashMap<Character, CharFrequence>();
+		frequencies = new HashMap<Character, CharFrequence>();
 		
 		for (int i = 0; reader.ready(); i++) {
 			Character c = (char) reader.read();
-			CharFrequence aux = charMap.get(c);
-			
+			CharFrequence aux = frequencies.get(c);
+			if(c == '\n') continue;
 			if(aux == null) {
-				charMap.put(c, new CharFrequence(c, 1));
+				frequencies.put(c, new CharFrequence(c, 1));
 			} else {
 				aux.setFrequence(aux.getFrequence()+1);
 			}			
 		}
-		CharFrequence [] auxVector = new CharFrequence[charMap.size()];
-		charMap.values().toArray(auxVector);
+		CharFrequence [] auxVector = new CharFrequence[frequencies.size()];
+		frequencies.values().toArray(auxVector);
 		
 		buildOrderedLinkedList(auxVector);
 		root = buildTree();
 		buildRepresentations();
+		System.out.println(representations);
 	}
 	
 	
 	void buildOrderedLinkedList(CharFrequence [] auxVector) {
 		
-		frequences = new LinkedList<CharFrequence>();
+		charFrequences = new LinkedList<CharFrequence>();
 		
 		for (int i = 0; i < auxVector.length; i++) {
 			insertOrdered(auxVector[i]);
@@ -59,18 +60,18 @@ public class Huffman {
 	} // buildOrderedLinkedList
 	
 	CharFrequence buildTree() {
-		while (frequences.size() > 1) {
+		while (charFrequences.size() > 1) {
 			
-			CharFrequence c1 = frequences.get(0);
-			CharFrequence c2 = frequences.get(1);
+			CharFrequence c1 = charFrequences.get(0);
+			CharFrequence c2 = charFrequences.get(1);
 			
-			frequences.remove(0);
-			frequences.remove(0);
+			charFrequences.remove(0);
+			charFrequences.remove(0);
 			
 			insertOrdered(mergeCharFrequence(c1, c2));
 			
 		}
-		return frequences.getFirst();
+		return charFrequences.getFirst();
 	}
 	
 	CharFrequence mergeCharFrequence(CharFrequence c1, CharFrequence c2) {
@@ -85,12 +86,12 @@ public class Huffman {
 	void insertOrdered(CharFrequence c) {
 		boolean wasInserted = false;
 		
-		if(frequences.size() == 0) {
-			frequences.add(c);
+		if(charFrequences.size() == 0) {
+			charFrequences.add(c);
 			return;
 		}
 		
-		for (ListIterator iterator = frequences.listIterator(); !wasInserted;) {
+		for (ListIterator iterator = charFrequences.listIterator(); !wasInserted;) {
 			CharFrequence charFrequence = (CharFrequence) iterator.next();
 			
 			if(c.getFrequence() < charFrequence.getFrequence()) {
@@ -98,13 +99,13 @@ public class Huffman {
 					iterator.previous();
 					iterator.add(c);
 				}else {
-					frequences.addFirst(c);
+					charFrequences.addFirst(c);
 				}
 				wasInserted = true;
 			}
 			
 			if(!iterator.hasNext()) {
-				frequences.addLast(c);
+				charFrequences.addLast(c);
 				wasInserted = true;
 			}
 			
@@ -134,35 +135,33 @@ public class Huffman {
 		if(cf == null) {
 			return;
 		}else if(cf.getValue() == null) {
-			visitor(cf.getRight(), code+"0", hm);
-			visitor(cf.getLeft(), code+"1", hm);
+			visitor(cf.getRight(), code+"1", hm);
+			visitor(cf.getLeft(), code+"0", hm);
 		}else {
 			hm.put(cf.getValue(), code);
 		}
 	}
 	
-	File encodeFile() throws IOException {
-		
-		File temp = new File("temp.txt");
-		FileOutputStream fos = new FileOutputStream(temp);
-		FileReader fr = new FileReader(file);
-		
-		ArrayList bt = new ArrayList();
-		String binary = "";
-		while(fr.ready()) {
-			char c = (char)fr.read();
-			binary = c+"";			
-		}
-		short a = Short.parseShort(binary, 2);
-		ByteBuffer bytes = ByteBuffer.allocate(2).putShort(a);
-
-		byte[] array = bytes.array();
-		
-		fos.write(array);
-		return temp;
-	}
+	
 	
 	HashMap<Character, String> getRepresentions() {
 		return this.representations;
 	}
+	
+	public double BitsPerLetter() {
+		double nOfBits = 0;
+		double nOfLetters = 0;
+		
+		Object [] aux = frequencies.values().toArray();
+		
+		for (int i = 0; i < aux.length; i++) {
+			CharFrequence cf = (CharFrequence)aux[i];
+			nOfBits += ((String)representations.get(cf.value)).length()*cf.frequence;
+			nOfLetters += cf.frequence;
+		}
+		
+		return nOfBits/nOfLetters;
+	}
+	
+	
 }
